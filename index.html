@@ -3,247 +3,332 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>your-username | Terminal</title>
+  <title>your-username | terminal</title>
 
-  <!-- jQuery Terminal CDN (v2.45.2 — latest stable) -->
   <script src="https://cdn.jsdelivr.net/npm/jquery"></script>
   <script src="https://cdn.jsdelivr.net/npm/jquery.terminal/js/jquery.terminal.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.terminal/css/jquery.terminal.min.css"/>
 
   <style>
-    /* ── Base Reset ───────────────────────────────────────── */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* ── Google Font (matches the screenshot's monospace) ── */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── Page background: dark navy ────────────────────────── */
     body {
-      background: #0d0d0d;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background-color: #1e2030;
       min-height: 100vh;
-      font-family: "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      padding: 40px 20px;
+    }
+
+    /* ── macOS window card ──────────────────────────────────── */
+    #terminal-window {
+      width: 100%;
+      max-width: 860px;
+      border-radius: 10px;
       overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
     }
 
-    /* ── CRT Wrapper ──────────────────────────────────────── */
-    #crt-wrapper {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
+    /* ── Title bar ──────────────────────────────────────────── */
+    #title-bar {
+      background-color: #2a2d3e;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #1a1c2a;
     }
 
-    /* ── Scanlines overlay ────────────────────────────────── */
-    /*
-      Uses a ::before pseudo-element with a repeating linear-gradient
-      to produce horizontal scanlines on top of the terminal.
-      pointer-events: none ensures it doesn't block typing.
-    */
-    #crt-wrapper::before {
-      content: " ";
-      display: block;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(
-        to bottom,
-        rgba(18, 16, 16, 0) 50%,
-        rgba(0, 0, 0, 0.25) 50%
-      );
-      background-size: 100% 4px;
-      z-index: 10;
-      pointer-events: none;
+    /* Traffic light dots */
+    .dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+    }
+    .dot-red    { background-color: #ff5f57; }
+    .dot-yellow { background-color: #febc2e; }
+    .dot-green  { background-color: #28c840; }
+
+    /* ── Terminal body ──────────────────────────────────────── */
+    #terminal-body {
+      background-color: #282a36;
+      padding: 0;
+      min-height: 420px;
     }
 
-    /* ── Moving scanline sweep ────────────────────────────── */
-    #crt-wrapper::after {
-      content: " ";
-      display: block;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 255, 0, 0.015);
-      z-index: 11;
-      pointer-events: none;
-      animation: scanSweep 8s linear infinite;
-    }
-
-    @keyframes scanSweep {
-      0%   { background-position: 0 0; }
-      100% { background-position: 0 -10px; }
-    }
-
-    /* ── Flicker animation ────────────────────────────────── */
-    @keyframes flicker {
-      0%   { opacity: 0.97; }
-      5%   { opacity: 0.93; }
-      10%  { opacity: 0.97; }
-      15%  { opacity: 0.94; }
-      20%  { opacity: 0.98; }
-      50%  { opacity: 0.95; }
-      80%  { opacity: 0.96; }
-      100% { opacity: 0.98; }
-    }
-
-    #crt-wrapper {
-      animation: flicker 0.15s infinite;
-    }
-
-    /* ── jQuery Terminal Overrides ────────────────────────── */
+    /* ── jQuery Terminal overrides ──────────────────────────── */
     .terminal {
-      --color: #00ff41;           /* Matrix green — swap for #ffb000 for amber */
-      --background: #0d0d0d;
-      height: 100vh;
-      width: 100vw;
-      font-size: 15px;
-      line-height: 1.4;
-      text-shadow: 0 0 6px rgba(0, 255, 65, 0.6);  /* phosphor glow */
+      background: #282a36 !important;
+      font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+      font-size: 14px !important;
+      line-height: 1.7 !important;
+      padding: 24px 28px !important;
+      min-height: 420px !important;
+
+      /* No glow — clean dark IDE look like the screenshot */
+      --color: #cdd6f4;
+      --background: #282a36;
     }
 
-    /* Cursor glow */
-    .terminal .cmd-cursor {
-      background-color: #00ff41;
-      box-shadow: 0 0 8px #00ff41;
+    /* Hide the default greetings border/line if any */
+    .terminal .terminal-output div div {
+      white-space: pre-wrap;
     }
 
-    /* Prompt style */
-    .terminal .cmd .prompt {
-      color: #00ff41;
+    /* Prompt: "root >" in muted green */
+    .terminal-prompt-main .terminal-prompt {
+      color: #89b4fa !important;
+    }
+
+    /* Cursor */
+    .cmd-cursor {
+      background-color: #cdd6f4 !important;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    #footer {
+      margin-top: 28px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #565f89;
+      line-height: 2;
+    }
+
+    #footer a {
+      color: #89b4fa;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    #footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 
 <body>
-  <div id="crt-wrapper">
+
+  <!-- ── macOS-style window ───────────────────────────────── -->
+  <div id="terminal-window">
+
+    <!-- Title bar with traffic lights -->
+    <div id="title-bar">
+      <span class="dot dot-red"></span>
+      <span class="dot dot-yellow"></span>
+      <span class="dot dot-green"></span>
+    </div>
+
     <!-- Terminal mounts here -->
+    <div id="terminal-body"></div>
+
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <div id="footer">
+    <div>© Your Name 2025</div>
+    <div>Made with ♥ and coffee — <a href="https://github.com/your-username/your-username.github.io" target="_blank">source</a></div>
   </div>
 
   <script>
-    // ── Boot sequence text ─────────────────────────────────
-    const BOOT_TEXT = [
-      '╔══════════════════════════════════════════════╗',
-      '║         YOUR NAME — Interactive CV           ║',
-      '║              v1.0.0 // 2025                  ║',
-      '╚══════════════════════════════════════════════╝',
-      '',
-      'System boot OK. Type [[b;#00ff41;]help] to list commands.',
-      ''
-    ];
+    // ─────────────────────────────────────────────────────────
+    // Color helper: wraps text in jQuery Terminal's color syntax
+    // [[fg;bg;class]text]
+    // ─────────────────────────────────────────────────────────
+    const c = {
+      green:  (t) => `[[;#a6e3a1;]${t}]`,   // command names (ls, cd, cat…)
+      blue:   (t) => `[[;#89b4fa;]${t}]`,   // prompt "root", args like LINK
+      purple: (t) => `[[;#cba6f7;]${t}]`,   // special args like FILENAME, DIRECTORY
+      yellow: (t) => `[[;#f9e2af;]${t}]`,   // accent / whoami name
+      dim:    (t) => `[[;#565f89;]${t}]`,   // muted text
+      white:  (t) => `[[;#cdd6f4;]${t}]`,   // normal output
+      bold:   (t) => `[[b;#cdd6f4;]${t}]`,  // bold white
+    };
 
-    // ── Command definitions ────────────────────────────────
+    // ─────────────────────────────────────────────────────────
+    // Virtual filesystem
+    // ─────────────────────────────────────────────────────────
+    const fs = {
+      '~': {
+        type: 'dir',
+        children: ['about.txt', 'projects/', 'contact/']
+      },
+      '~/about.txt': {
+        type: 'file',
+        content: [
+          'Name     : Your Name',
+          'Role     : Technical Lead | Data Engineering',
+          'Location : New York City',
+          'Status   : Open to opportunities',
+        ].join('\n')
+      },
+      '~/projects': {
+        type: 'dir',
+        children: ['alpha.txt', 'beta.txt', 'gamma.txt']
+      },
+      '~/projects/alpha.txt': {
+        type: 'file',
+        content: 'Project Alpha\nAWS/Python data pipeline — 10M+ events/day\nStack: Lambda · Glue · Redshift · S3'
+      },
+      '~/projects/beta.txt': {
+        type: 'file',
+        content: 'Project Beta\nIoT Advertising Stack — real-time bidding engine\nStack: Kafka · Spark · PostgreSQL · Docker'
+      },
+      '~/projects/gamma.txt': {
+        type: 'file',
+        content: 'Project Gamma\nInternal BI dashboard — reduced report time 70%\nStack: dbt · Airflow · Metabase'
+      },
+      '~/contact': {
+        type: 'dir',
+        children: ['github.txt', 'linkedin.txt', 'bluesky.txt']
+      },
+      '~/contact/github.txt': {
+        type: 'file',
+        content: 'https://github.com/your-username'
+      },
+      '~/contact/linkedin.txt': {
+        type: 'file',
+        content: 'https://linkedin.com/in/your-profile'
+      },
+      '~/contact/bluesky.txt': {
+        type: 'file',
+        content: 'https://bsky.app/profile/yourhandle'
+      },
+    };
+
+    // ─────────────────────────────────────────────────────────
+    // State
+    // ─────────────────────────────────────────────────────────
+    let cwd = '~';   // current working directory
+
+    function resolvePath(target) {
+      if (!target || target === '~') return '~';
+      if (target === '..') {
+        const parts = cwd.split('/');
+        parts.pop();
+        return parts.join('/') || '~';
+      }
+      if (target.startsWith('~/')) return target;
+      return cwd === '~' ? `~/${target}` : `${cwd}/${target}`;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Commands
+    // ─────────────────────────────────────────────────────────
     const COMMANDS = {
 
       help: function () {
         this.echo([
-          '',
-          '  [[b;#00ff41;]AVAILABLE COMMANDS]',
-          '  ─────────────────────────────',
-          '  [[;#aaffaa;]about]      →  Who I am',
-          '  [[;#aaffaa;]skills]     →  Technical stack',
-          '  [[;#aaffaa;]projects]   →  Selected work',
-          '  [[;#aaffaa;]experience] →  Work history',
-          '  [[;#aaffaa;]contact]    →  Get in touch',
-          '  [[;#aaffaa;]resume]     →  Open PDF résumé',
-          '  [[;#aaffaa;]clear]      →  Clear the screen',
-          ''
+          `- ${c.green('path')} — display current directory`,
+          `- ${c.green('cat')} ${c.purple('FILENAME')} — display file contents`,
+          `- ${c.green('cd')} ${c.purple('DIRECTORY')} — move into directory ${c.dim('(cd to return to root)')}`,
+          `- ${c.green('ls')} — show files in current directory`,
+          `- ${c.green('open')} ${c.purple('LINK')} — open a contact link ${c.dim('(github, bluesky, linkedin)')}`,
+          `- ${c.green('whoami')} — who am i?`,
+          `- ${c.green('history')} — see your command history`,
+          `- ${c.green('clear')} — clear the terminal`,
         ].join('\n'));
       },
 
-      about: function () {
-        this.echo([
-          '',
-          '  [[b;#00ff41;]// ABOUT]',
-          '  Name      : Your Name',
-          '  Role      : Technical Lead | Data Engineering',
-          '  Location  : New York City',
-          '  Status    : [[;#00ff41;]Open to opportunities]',
-          ''
-        ].join('\n'));
+      path: function () {
+        this.echo(c.white(cwd));
       },
 
-      skills: function () {
-        this.echo([
-          '',
-          '  [[b;#00ff41;]// SKILLS]',
-          '  Languages : Python · SQL · JavaScript · Bash',
-          '  Cloud     : AWS (Glue, Lambda, Redshift, S3)',
-          '  Data      : Spark · Airflow · dbt · Kafka',
-          '  DevOps    : Docker · Terraform · GitHub Actions',
-          '  Other     : REST APIs · IoT · System Design',
-          ''
-        ].join('\n'));
+      ls: function () {
+        const node = fs[cwd];
+        if (!node || node.type !== 'dir') {
+          this.error('Not a directory.');
+          return;
+        }
+        const output = node.children.map(name => {
+          const fullPath = cwd === '~' ? `~/${name.replace('/', '')}` : `${cwd}/${name.replace('/', '')}`;
+          const isDir = name.endsWith('/');
+          return isDir ? c.blue(name) : c.white(name);
+        });
+        this.echo(output.join('  '));
       },
 
-      projects: function () {
-        this.echo([
-          '',
-          '  [[b;#00ff41;]// PROJECTS]',
-          '',
-          '  [[;#aaffaa;]1. Project Alpha]',
-          '     AWS/Python data pipeline — 10M+ events/day',
-          '     Stack: Lambda · Glue · Redshift · S3',
-          '',
-          '  [[;#aaffaa;]2. Project Beta]',
-          '     IoT Advertising Stack — real-time bidding engine',
-          '     Stack: Kafka · Spark · PostgreSQL · Docker',
-          '',
-          '  [[;#aaffaa;]3. Project Gamma]',
-          '     Internal BI dashboard — reduced report time 70%',
-          '     Stack: dbt · Airflow · Metabase',
-          ''
-        ].join('\n'));
+      cd: function (target) {
+        if (!target || target === '~') {
+          cwd = '~';
+          return;
+        }
+        const resolved = resolvePath(target.replace(/\/$/, ''));
+        if (fs[resolved] && fs[resolved].type === 'dir') {
+          cwd = resolved;
+        } else {
+          this.error(`cd: no such directory: ${target}`);
+        }
       },
 
-      experience: function () {
-        this.echo([
-          '',
-          '  [[b;#00ff41;]// EXPERIENCE]',
-          '',
-          '  [[;#aaffaa;]Company Name]  (2022 – Present)',
-          '  Technical Lead, Data Engineering',
-          '  → Led team of 5, owned data platform roadmap',
-          '',
-          '  [[;#aaffaa;]Previous Co.]  (2019 – 2022)',
-          '  Senior Data Engineer',
-          '  → Built ETL pipelines ingesting 5B rows/month',
-          ''
-        ].join('\n'));
+      cat: function (filename) {
+        if (!filename) { this.error('Usage: cat FILENAME'); return; }
+        const resolved = resolvePath(filename);
+        const node = fs[resolved];
+        if (!node) { this.error(`cat: ${filename}: No such file`); return; }
+        if (node.type === 'dir') { this.error(`cat: ${filename}: Is a directory`); return; }
+        this.echo(c.white(node.content));
       },
 
-      contact: function () {
-        this.echo([
-          '',
-          '  [[b;#00ff41;]// CONTACT]',
-          '  Email    : you@example.com',
-          '  GitHub   : [[!;;;;https://github.com/your-username]github.com/your-username]',
-          '  LinkedIn : [[!;;;;https://linkedin.com/in/your-profile]linkedin.com/in/your-profile]',
-          '  Twitter  : [[!;;;;https://twitter.com/yourhandle]@yourhandle]',
-          ''
-        ].join('\n'));
+      open: function (link) {
+        const links = {
+          github:   'https://github.com/your-username',
+          linkedin: 'https://linkedin.com/in/your-profile',
+          bluesky:  'https://bsky.app/profile/yourhandle',
+          resume:   'https://your-cdn.com/resume.pdf',
+        };
+        if (!link) { this.error('Usage: open LINK  (github | linkedin | bluesky | resume)'); return; }
+        const url = links[link.toLowerCase()];
+        if (!url) { this.error(`open: unknown link "${link}". Try: github, linkedin, bluesky, resume`); return; }
+        this.echo(`Opening ${c.blue(link)}...`);
+        window.open(url, '_blank');
       },
 
-      resume: function () {
-        this.echo('  Opening résumé PDF...');
-        // 🔁 Replace the URL below with your actual hosted PDF
-        window.open('https://your-cdn-or-github-url.com/resume.pdf', '_blank');
-      }
+      whoami: function () {
+        this.echo(`${c.yellow('your-username')} — technical lead, data engineer`);
+      },
 
     };
 
-    // ── Mount the terminal ─────────────────────────────────
-    $('#crt-wrapper').terminal(COMMANDS, {
-      greetings: BOOT_TEXT.join('\n'),
+    // ─────────────────────────────────────────────────────────
+    // Boot / greetings (matches screenshot style)
+    // ─────────────────────────────────────────────────────────
+    const GREETINGS = [
+      `${c.white('\\[._.]/  welcome to your-username.github.io')}`,
+      `type ${c.green('help')} to get started`,
+    ].join('\n');
+
+    // ─────────────────────────────────────────────────────────
+    // Mount
+    // ─────────────────────────────────────────────────────────
+    $('#terminal-body').terminal(COMMANDS, {
+      greetings: GREETINGS,
       name: 'portfolio',
-      prompt: '[[b;#00ff41;]visitor@portfolio][[;#888;]:][[;#aaffaa;]~]$ ',
-      completion: Object.keys(COMMANDS),   // tab-completion!
+
+      // Prompt matches screenshot: "root > "
+      prompt: `${c.blue('root')} ${c.dim('›')} `,
+
+      completion: Object.keys(COMMANDS),
       checkArity: false,
-      onInit: function () {
-        // Slight boot delay for drama
-        const term = this;
-        term.pause();
-        setTimeout(() => term.resume(), 600);
-      },
+      historySize: 50,
+
       onUnknownCommand: function (cmd) {
-        this.error(`  Command not found: "${cmd}". Type help for options.`);
+        this.error(`command not found: ${cmd}. Type help for options.`);
       }
     });
   </script>
+
 </body>
 </html>
