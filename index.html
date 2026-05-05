@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>your-username | Terminal</title>
+
+  <!-- jQuery Terminal CDN (v2.45.2 — latest stable) -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery.terminal/js/jquery.terminal.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.terminal/css/jquery.terminal.min.css"/>
+
+  <style>
+    /* ── Base Reset ───────────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d0d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: "Courier New", monospace;
+      overflow: hidden;
+    }
+
+    /* ── CRT Wrapper ──────────────────────────────────────── */
+    #crt-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Scanlines overlay ────────────────────────────────── */
+    /*
+      Uses a ::before pseudo-element with a repeating linear-gradient
+      to produce horizontal scanlines on top of the terminal.
+      pointer-events: none ensures it doesn't block typing.
+    */
+    #crt-wrapper::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+      );
+      background-size: 100% 4px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* ── Moving scanline sweep ────────────────────────────── */
+    #crt-wrapper::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 255, 0, 0.015);
+      z-index: 11;
+      pointer-events: none;
+      animation: scanSweep 8s linear infinite;
+    }
+
+    @keyframes scanSweep {
+      0%   { background-position: 0 0; }
+      100% { background-position: 0 -10px; }
+    }
+
+    /* ── Flicker animation ────────────────────────────────── */
+    @keyframes flicker {
+      0%   { opacity: 0.97; }
+      5%   { opacity: 0.93; }
+      10%  { opacity: 0.97; }
+      15%  { opacity: 0.94; }
+      20%  { opacity: 0.98; }
+      50%  { opacity: 0.95; }
+      80%  { opacity: 0.96; }
+      100% { opacity: 0.98; }
+    }
+
+    #crt-wrapper {
+      animation: flicker 0.15s infinite;
+    }
+
+    /* ── jQuery Terminal Overrides ────────────────────────── */
+    .terminal {
+      --color: #00ff41;           /* Matrix green — swap for #ffb000 for amber */
+      --background: #0d0d0d;
+      height: 100vh;
+      width: 100vw;
+      font-size: 15px;
+      line-height: 1.4;
+      text-shadow: 0 0 6px rgba(0, 255, 65, 0.6);  /* phosphor glow */
+    }
+
+    /* Cursor glow */
+    .terminal .cmd-cursor {
+      background-color: #00ff41;
+      box-shadow: 0 0 8px #00ff41;
+    }
+
+    /* Prompt style */
+    .terminal .cmd .prompt {
+      color: #00ff41;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="crt-wrapper">
+    <!-- Terminal mounts here -->
+  </div>
+
+  <script>
+    // ── Boot sequence text ─────────────────────────────────
+    const BOOT_TEXT = [
+      '╔══════════════════════════════════════════════╗',
+      '║         YOUR NAME — Interactive CV           ║',
+      '║              v1.0.0 // 2025                  ║',
+      '╚══════════════════════════════════════════════╝',
+      '',
+      'System boot OK. Type [[b;#00ff41;]help] to list commands.',
+      ''
+    ];
+
+    // ── Command definitions ────────────────────────────────
+    const COMMANDS = {
+
+      help: function () {
+        this.echo([
+          '',
+          '  [[b;#00ff41;]AVAILABLE COMMANDS]',
+          '  ─────────────────────────────',
+          '  [[;#aaffaa;]about]      →  Who I am',
+          '  [[;#aaffaa;]skills]     →  Technical stack',
+          '  [[;#aaffaa;]projects]   →  Selected work',
+          '  [[;#aaffaa;]experience] →  Work history',
+          '  [[;#aaffaa;]contact]    →  Get in touch',
+          '  [[;#aaffaa;]resume]     →  Open PDF résumé',
+          '  [[;#aaffaa;]clear]      →  Clear the screen',
+          ''
+        ].join('\n'));
+      },
+
+      about: function () {
+        this.echo([
+          '',
+          '  [[b;#00ff41;]// ABOUT]',
+          '  Name      : Your Name',
+          '  Role      : Technical Lead | Data Engineering',
+          '  Location  : New York City',
+          '  Status    : [[;#00ff41;]Open to opportunities]',
+          ''
+        ].join('\n'));
+      },
+
+      skills: function () {
+        this.echo([
+          '',
+          '  [[b;#00ff41;]// SKILLS]',
+          '  Languages : Python · SQL · JavaScript · Bash',
+          '  Cloud     : AWS (Glue, Lambda, Redshift, S3)',
+          '  Data      : Spark · Airflow · dbt · Kafka',
+          '  DevOps    : Docker · Terraform · GitHub Actions',
+          '  Other     : REST APIs · IoT · System Design',
+          ''
+        ].join('\n'));
+      },
+
+      projects: function () {
+        this.echo([
+          '',
+          '  [[b;#00ff41;]// PROJECTS]',
+          '',
+          '  [[;#aaffaa;]1. Project Alpha]',
+          '     AWS/Python data pipeline — 10M+ events/day',
+          '     Stack: Lambda · Glue · Redshift · S3',
+          '',
+          '  [[;#aaffaa;]2. Project Beta]',
+          '     IoT Advertising Stack — real-time bidding engine',
+          '     Stack: Kafka · Spark · PostgreSQL · Docker',
+          '',
+          '  [[;#aaffaa;]3. Project Gamma]',
+          '     Internal BI dashboard — reduced report time 70%',
+          '     Stack: dbt · Airflow · Metabase',
+          ''
+        ].join('\n'));
+      },
+
+      experience: function () {
+        this.echo([
+          '',
+          '  [[b;#00ff41;]// EXPERIENCE]',
+          '',
+          '  [[;#aaffaa;]Company Name]  (2022 – Present)',
+          '  Technical Lead, Data Engineering',
+          '  → Led team of 5, owned data platform roadmap',
+          '',
+          '  [[;#aaffaa;]Previous Co.]  (2019 – 2022)',
+          '  Senior Data Engineer',
+          '  → Built ETL pipelines ingesting 5B rows/month',
+          ''
+        ].join('\n'));
+      },
+
+      contact: function () {
+        this.echo([
+          '',
+          '  [[b;#00ff41;]// CONTACT]',
+          '  Email    : you@example.com',
+          '  GitHub   : [[!;;;;https://github.com/your-username]github.com/your-username]',
+          '  LinkedIn : [[!;;;;https://linkedin.com/in/your-profile]linkedin.com/in/your-profile]',
+          '  Twitter  : [[!;;;;https://twitter.com/yourhandle]@yourhandle]',
+          ''
+        ].join('\n'));
+      },
+
+      resume: function () {
+        this.echo('  Opening résumé PDF...');
+        // 🔁 Replace the URL below with your actual hosted PDF
+        window.open('https://your-cdn-or-github-url.com/resume.pdf', '_blank');
+      }
+
+    };
+
+    // ── Mount the terminal ─────────────────────────────────
+    $('#crt-wrapper').terminal(COMMANDS, {
+      greetings: BOOT_TEXT.join('\n'),
+      name: 'portfolio',
+      prompt: '[[b;#00ff41;]visitor@portfolio][[;#888;]:][[;#aaffaa;]~]$ ',
+      completion: Object.keys(COMMANDS),   // tab-completion!
+      checkArity: false,
+      onInit: function () {
+        // Slight boot delay for drama
+        const term = this;
+        term.pause();
+        setTimeout(() => term.resume(), 600);
+      },
+      onUnknownCommand: function (cmd) {
+        this.error(`  Command not found: "${cmd}". Type help for options.`);
+      }
+    });
+  </script>
+</body>
+</html>
