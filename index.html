@@ -10,13 +10,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.terminal/css/jquery.terminal.min.css"/>
 
   <style>
-    /* ── Google Font (matches the screenshot's monospace) ── */
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
-    /* ── Reset ─────────────────────────────────────────────── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* ── Page background: dark navy ────────────────────────── */
     body {
       background-color: #1e2030;
       min-height: 100vh;
@@ -28,7 +25,6 @@
       padding: 40px 20px;
     }
 
-    /* ── macOS window card ──────────────────────────────────── */
     #terminal-window {
       width: 100%;
       max-width: 860px;
@@ -37,7 +33,6 @@
       box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
     }
 
-    /* ── Title bar ──────────────────────────────────────────── */
     #title-bar {
       background-color: #2a2d3e;
       padding: 12px 16px;
@@ -47,24 +42,17 @@
       border-bottom: 1px solid #1a1c2a;
     }
 
-    /* Traffic light dots */
-    .dot {
-      width: 13px;
-      height: 13px;
-      border-radius: 50%;
-    }
+    .dot { width: 13px; height: 13px; border-radius: 50%; }
     .dot-red    { background-color: #ff5f57; }
     .dot-yellow { background-color: #febc2e; }
     .dot-green  { background-color: #28c840; }
 
-    /* ── Terminal body ──────────────────────────────────────── */
     #terminal-body {
       background-color: #282a36;
       padding: 0;
       min-height: 420px;
     }
 
-    /* ── jQuery Terminal overrides ──────────────────────────── */
     .terminal {
       background: #282a36 !important;
       font-family: 'JetBrains Mono', 'Courier New', monospace !important;
@@ -72,32 +60,19 @@
       line-height: 1.7 !important;
       padding: 24px 28px !important;
       min-height: 420px !important;
-
-      /* No glow — clean dark IDE look like the screenshot */
       --color: #cdd6f4;
       --background: #282a36;
     }
 
-    /* Hide the default greetings border/line if any */
-    .terminal .terminal-output div div {
-      white-space: pre-wrap;
-    }
+    .terminal .terminal-output div div { white-space: pre-wrap; }
+    .terminal-prompt-main .terminal-prompt { color: #89b4fa !important; }
 
-    /* Prompt: "root >" in muted green */
-    .terminal-prompt-main .terminal-prompt {
-      color: #89b4fa !important;
-    }
-
-    /* Cursor */
     .cmd-cursor {
       background-color: #cdd6f4 !important;
       animation: blink 1s step-end infinite;
     }
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
+    @keyframes blink { 50% { opacity: 0; } }
 
-    /* ── Footer ─────────────────────────────────────────────── */
     #footer {
       margin-top: 28px;
       text-align: center;
@@ -113,58 +88,46 @@
       font-weight: 700;
     }
 
-    #footer a:hover {
-      text-decoration: underline;
-    }
+    #footer a:hover { text-decoration: underline; }
   </style>
 </head>
 
 <body>
 
-  <!-- ── macOS-style window ───────────────────────────────── -->
   <div id="terminal-window">
-
-    <!-- Title bar with traffic lights -->
     <div id="title-bar">
       <span class="dot dot-red"></span>
       <span class="dot dot-yellow"></span>
       <span class="dot dot-green"></span>
     </div>
-
-    <!-- Terminal mounts here -->
     <div id="terminal-body"></div>
-
   </div>
 
-  <!-- ── Footer ────────────────────────────────────────────── -->
   <div id="footer">
     <div>© Tobi Adeyefa 2026</div>
-    <div>Made with ♥ and coffe— </div>
+    <div>Made with ♥ and coffee</div>
   </div>
 
   <script>
-    // ─────────────────────────────────────────────────────────
-    // Color helper: wraps text in jQuery Terminal's color syntax
-    // [[fg;bg;class]text]
-    // ─────────────────────────────────────────────────────────
+    // ── Color helpers ────────────────────────────────────────
     const c = {
-      green:  (t) => `[[;#a6e3a1;]${t}]`,   // command names (ls, cd, cat…)
-      blue:   (t) => `[[;#89b4fa;]${t}]`,   // prompt "root", args like LINK
-      purple: (t) => `[[;#cba6f7;]${t}]`,   // special args like FILENAME, DIRECTORY
-      yellow: (t) => `[[;#f9e2af;]${t}]`,   // accent / whoami name
-      dim:    (t) => `[[;#565f89;]${t}]`,   // muted text
-      white:  (t) => `[[;#cdd6f4;]${t}]`,   // normal output
-      bold:   (t) => `[[b;#cdd6f4;]${t}]`,  // bold white
+      green:  (t) => `[[;#a6e3a1;]${t}]`,
+      blue:   (t) => `[[;#89b4fa;]${t}]`,
+      purple: (t) => `[[;#cba6f7;]${t}]`,
+      yellow: (t) => `[[;#f9e2af;]${t}]`,
+      dim:    (t) => `[[;#565f89;]${t}]`,
+      white:  (t) => `[[;#cdd6f4;]${t}]`,
+      bold:   (t) => `[[b;#cdd6f4;]${t}]`,
     };
 
-    // ─────────────────────────────────────────────────────────
-    // Virtual filesystem
-    // ─────────────────────────────────────────────────────────
+    // ── Virtual filesystem ───────────────────────────────────
     const fs = {
+
       '~': {
         type: 'dir',
         children: ['about.txt', 'projects/', 'contact/']
       },
+
       '~/about.txt': {
         type: 'file',
         content: [
@@ -173,41 +136,95 @@
           'Location : NYC, East Coast USA',
         ].join('\n')
       },
+
+      // ── projects/ ─────────────────────────────────────────
       '~/projects': {
         type: 'dir',
-        children: ['JobApps Copilot', 'Claude Based CLI for dag issues', 'Utility App: Spin up and tear down AI utilities in seconds']
+        children: [
+          'jobapps-copilot.txt',
+          'dbt-gen.txt',
+          'quick-utils.txt',
+        ]
       },
-      '~/projects/JobApps Copilot': {
+
+      '~/projects/jobapps-copilot.txt': {
         type: 'file',
-        content: 'Project JobApps Copilot\nTrack and monitor data about jobs you find interesting. Self hosted with a Web interface and completely extensible [github link]'
+        content: [
+          'JobApps Copilot',
+          '───────────────────────────────────────────',
+          'Track and monitor jobs you find interesting.',
+          'Self-hosted with a clean web interface — completely extensible.',
+          '',
+          'Stack    : Python · Flask · SQLite · Docker',
+          'Features : ·Job pipeline board (Kanban-style)',
+          '           ·Auto-enriches listings via web scraping',
+          '           ·Email digest of new matches',
+          '           ·Export to CSV / Notion',
+          '',
+          'GitHub   : https://github.com/tk-tobi/jobapps-copilot',
+        ].join('\n')
       },
-      '~/projects/Claude Based CLI for dag issues': {
+
+      '~/projects/dbt-gen.txt': {
         type: 'file',
-        content: 'Claude Based CLI for dag issues\nCreate clean dbt models, schema with column descriptions, generate basic tests all in a single terminal session with AI'
+        content: [
+          'dbt-gen',
+          '───────────────────────────────────────────',
+          'Groq-powered CLI that converts raw SQL into production-ready',
+          'dbt models, schema.yml, and column-level tests in one shot.',
+          '',
+          'Stack    : Python · Groq API · Llama 3.3 70B',
+          'Features : ·Decomposes raw SQL into CTE-based dbt models',
+          '           ·Auto-generates schema.yml with column descriptions',
+          '           ·Infers not_null, unique, accepted_values tests',
+          '           ·Drops files directly into /models directory',
+          '           ·Stdin or file input — works in any shell',
+          '',
+          'GitHub   : https://github.com/tk-tobi/dbt-gen',
+        ].join('\n')
       },
-      '~/projects/Utility App: Spin up and tear down AI utilities in seconds': {
+
+      '~/projects/quick-utils.txt': {
         type: 'file',
-        content: 'Quick Utils\niOS Application for spinning up and tearing down AI utilities in seconds.\nSimple utilities: ·Currency Calculator ·Portfolio Monitor\nComplex Utilities ·Portfolio Tracker  ·Wager tracking for Gaming and Prediction Platforms'
+        content: [
+          'Quick Utils',
+          '───────────────────────────────────────────',
+          'iOS app for spinning up and tearing down AI-powered utilities',
+          'in seconds. Minimal UI, maximum utility.',
+          '',
+          'Stack    : Swift · SwiftUI · OpenAI API',
+          'Simple   : ·Currency Calculator',
+          '           ·Unit Converter',
+          '           ·Portfolio Snapshot',
+          'Complex  : ·Portfolio Tracker (live prices + P&L)',
+          '           ·Wager Tracker for Gaming & Prediction Platforms',
+          '',
+          'Status   : In development — TestFlight beta coming soon',
+        ].join('\n')
       },
+
+      // ── contact/ ──────────────────────────────────────────
       '~/contact': {
         type: 'dir',
         children: ['github.txt', 'linkedin.txt']
       },
+
       '~/contact/github.txt': {
         type: 'file',
-        content: 'https://github.com/tk-tobi'
+        content: 'https://github.com/tk-tobi',
+        url: 'https://github.com/tk-tobi',
       },
+
       '~/contact/linkedin.txt': {
         type: 'file',
-        content: 'https://linkedin.com/in/oadeyefa/'
+        content: 'https://linkedin.com/in/oadeyefa/',
+        url: 'https://linkedin.com/in/oadeyefa/',
       },
-      },
+
     };
 
-    // ─────────────────────────────────────────────────────────
-    // State
-    // ─────────────────────────────────────────────────────────
-    let cwd = '~';   // current working directory
+    // ── State ────────────────────────────────────────────────
+    let cwd = '~';
 
     function resolvePath(target) {
       if (!target || target === '~') return '~';
@@ -220,9 +237,7 @@
       return cwd === '~' ? `~/${target}` : `${cwd}/${target}`;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // Commands
-    // ─────────────────────────────────────────────────────────
+    // ── Commands ─────────────────────────────────────────────
     const COMMANDS = {
 
       help: function () {
@@ -231,7 +246,7 @@
           `- ${c.green('cat')} ${c.purple('FILENAME')} — display file contents`,
           `- ${c.green('cd')} ${c.purple('DIRECTORY')} — move into directory ${c.dim('(cd to return to root)')}`,
           `- ${c.green('ls')} — show files in current directory`,
-          `- ${c.green('open')} ${c.purple('LINK')} — open a contact link ${c.dim('(github, bluesky, linkedin)')}`,
+          `- ${c.green('link')} ${c.purple('FILENAME')} — open a contact link ${c.dim('(e.g. link github.txt)')}`,
           `- ${c.green('whoami')} — who am i?`,
           `- ${c.green('history')} — see your command history`,
           `- ${c.green('clear')} — clear the terminal`,
@@ -249,7 +264,6 @@
           return;
         }
         const output = node.children.map(name => {
-          const fullPath = cwd === '~' ? `~/${name.replace('/', '')}` : `${cwd}/${name.replace('/', '')}`;
           const isDir = name.endsWith('/');
           return isDir ? c.blue(name) : c.white(name);
         });
@@ -257,10 +271,7 @@
       },
 
       cd: function (target) {
-        if (!target || target === '~') {
-          cwd = '~';
-          return;
-        }
+        if (!target || target === '~') { cwd = '~'; return; }
         const resolved = resolvePath(target.replace(/\/$/, ''));
         if (fs[resolved] && fs[resolved].type === 'dir') {
           cwd = resolved;
@@ -273,53 +284,66 @@
         if (!filename) { this.error('Usage: cat FILENAME'); return; }
         const resolved = resolvePath(filename);
         const node = fs[resolved];
-        if (!node) { this.error(`cat: ${filename}: No such file`); return; }
+        if (!node)              { this.error(`cat: ${filename}: No such file`); return; }
         if (node.type === 'dir') { this.error(`cat: ${filename}: Is a directory`); return; }
         this.echo(c.white(node.content));
       },
 
-      open: function (link) {
-        const links = {
-          github:   'https://github.com/your-username',
-          linkedin: 'https://linkedin.com/in/your-profile',
-          bluesky:  'https://bsky.app/profile/yourhandle',
-          resume:   'https://your-cdn.com/resume.pdf',
-        };
-        if (!link) { this.error('Usage: open LINK  (github | linkedin | bluesky | resume)'); return; }
-        const url = links[link.toLowerCase()];
-        if (!url) { this.error(`open: unknown link "${link}". Try: github, linkedin, bluesky, resume`); return; }
-        this.echo(`Opening ${c.blue(link)}...`);
+      // ── link: open a contact file's URL in a new tab ──────
+      link: function (filename) {
+        if (!filename) {
+          this.error(`Usage: link FILENAME  ${c.dim('(e.g. link github.txt)')}`);
+          return;
+        }
+
+        // Allow bare names like "github" or full names like "github.txt"
+        const normalized = filename.endsWith('.txt') ? filename : `${filename}.txt`;
+        const resolved   = resolvePath(normalized);
+        const node       = fs[resolved];
+
+        if (!node) {
+          this.error(`link: ${filename}: No such file`);
+          return;
+        }
+        if (node.type === 'dir') {
+          this.error(`link: ${filename}: Is a directory — cd into it first and use ls`);
+          return;
+        }
+
+        // Use dedicated url field if present, otherwise treat content as URL
+        const url = node.url || node.content.trim();
+
+        if (!url.startsWith('http')) {
+          this.error(`link: ${filename}: No URL found in this file`);
+          return;
+        }
+
+        this.echo(`Opening ${c.blue(normalized)} → ${c.dim(url)}`);
         window.open(url, '_blank');
       },
 
       whoami: function () {
-        this.echo(`${c.yellow('your-username')} — technical lead, data engineer`);
+        this.echo(`${c.yellow('tk-tobi')} — data engineer, builder`);
       },
 
     };
 
-    // ─────────────────────────────────────────────────────────
-    // Boot / greetings (matches screenshot style)
-    // ─────────────────────────────────────────────────────────
+    // ── Greetings ─────────────────────────────────────────────
+    // Backslash before [ prevents jQuery Terminal from parsing
+    // the bracket as a color/formatting token.
     const GREETINGS = [
-      `${c.white('\\[._.]/  welcome to your-username.github.io')}`,
+      `${c.white('\\[*_*]/ Welcome to Tobi\'s terminal')}`,
       `type ${c.green('help')} to get started`,
     ].join('\n');
 
-    // ─────────────────────────────────────────────────────────
-    // Mount
-    // ─────────────────────────────────────────────────────────
+    // ── Mount ─────────────────────────────────────────────────
     $('#terminal-body').terminal(COMMANDS, {
       greetings: GREETINGS,
       name: 'portfolio',
-
-      // Prompt matches screenshot: "root > "
       prompt: `${c.blue('root')} ${c.dim('›')} `,
-
       completion: Object.keys(COMMANDS),
       checkArity: false,
       historySize: 50,
-
       onUnknownCommand: function (cmd) {
         this.error(`command not found: ${cmd}. Type help for options.`);
       }
